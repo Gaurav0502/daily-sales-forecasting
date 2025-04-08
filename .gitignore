@@ -1,0 +1,11 @@
+data/
+*.ipynb_checkpoints
+forecasting/
+documents/
+__pycache__/
+rough.ipynb
+
+*.pdf
+*.docx
+*.pptx
+*.doc
