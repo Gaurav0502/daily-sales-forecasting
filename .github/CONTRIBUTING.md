@@ -29,14 +29,24 @@ git pull origin main
 ```bash
 .
 ├── README.md
-├── clustering.ipynb
-├── clusters.json
+├── cluster.py
 ├── data
-│   ├── online_retail_II.xlsx
-├── eda.ipynb
-├── model.py
-├── modelling.ipynb
+│   ├── clusters
+│   │   ├── cluster_0.csv
+│   │   ├── cluster_1.csv
+│   │   ├── cluster_2.csv
+│   │   ├── cluster_3.csv
+│   │   ├── cluster_4.csv
+│   │   ├── cluster_5.csv
+│   │   ├── cluster_6.csv
+│   │   ├── cluster_7.csv
+│   │   ├── cluster_8.csv
+│   │   └── cluster_9.csv
+│   └── online_retail_II.xlsx
 ├── preprocess.py
-└── requirements.txt
+├── requirements.txt
+└── rough.ipynb
+
+4 directories, 17 files
 
 ```
