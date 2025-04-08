@@ -10,6 +10,16 @@ git checkout <branch-name>
 
 - If you use any new module from Python, please add it inside requirements.txt.
 
+- To get the aggregated daily sales data, use the ```cluster.py```.
+
+```python
+
+from cluster import get_daily_sales
+
+df = get_daily_sales(<integer between 0 and 9 for cluster ID>)
+
+```
+
 
 # Guidelines for pull request
 Before making a pull request, ensure the following requirements are fulfilled:
