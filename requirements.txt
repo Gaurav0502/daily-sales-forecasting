@@ -1,5 +1,6 @@
 # general modules
 numpy
+scipy
 pandas
 seaborn
 matplotlib
