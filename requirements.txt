@@ -1,4 +1,16 @@
+# general modules
 numpy
+scipy
 pandas
 seaborn
 matplotlib
+sklearn
+
+# for tft
+torch 
+lightning 
+pytorch_forecasting
+pytorch_optimizer
+optuna-integration[pytorch_lightning]
+ray[tune]
+pickle
