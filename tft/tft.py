@@ -42,12 +42,12 @@ import wandb
 # function typing
 import torch
 from torch.utils.data import DataLoader
-from typing import Tuple
+from typing import Tuple, Any
 
 
 class TFT:
 
-    def __init__(self, data: pd.DataFrame, configs: dict[str, any]):
+    def __init__(self, data: pd.DataFrame, configs: dict[str, Any]):
         
         self.data = data
         self.cv_configs = configs["cross_validation"]
@@ -60,7 +60,7 @@ class TFT:
         self.cv_results = None
 
     # time series smoothing
-    def apply_savgol_filter(self, x: pd.Series):
+    def apply_savgol_filter(self, x: pd.Series) -> Any:
         return savgol_filter(x, window_length = 9, 
                              polyorder = 2)
 
@@ -189,7 +189,7 @@ class TFT:
         )
 
     # Cross Validation of TFT model
-    def cross_validate(self, MIN_TIME_IDX: int, MAX_TIME_IDX: int):
+    def cross_validate(self, MIN_TIME_IDX: int, MAX_TIME_IDX: int) -> None:
 
         # only consider validation and test
         total_window_width = self.cv_configs.val + self.cv_configs.test
@@ -259,7 +259,7 @@ class TFT:
             print(f"This window got a MAPE of {self.cv_results[-1]['MAPE']}")
 
 
-    def predict(self, dataloader: any):
+    def predict(self, dataloader: Any) -> Any:
         
         return self.tft.predict(dataloader)
     
