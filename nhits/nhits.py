@@ -43,12 +43,13 @@ import wandb
 # function typing
 import torch
 from torch.utils.data import DataLoader
-from typing import Tuple
+from typing import Tuple, Any
 
 
 class NHiTS_model:
 
-    def __init__(self, data, loss, optimizer, configs: dict[str, any]):
+    def __init__(self, data: pd.DataFrame, loss: Any, 
+                 optimizer: Any, configs: dict[str, Any]):
         
         self.data = data
         self.cv_configs = configs["cross_validation"]
@@ -63,10 +64,13 @@ class NHiTS_model:
         self.loss = loss
         self.optimizer = optimizer
        
-    def apply_savgol_filter(self, x):
-        return savgol_filter(x, window_length=9, polyorder=2)
+    def apply_savgol_filter(self, x: pd.Series) -> Any:
+        return savgol_filter(x, window_length = 9, polyorder = 2)
         
-    def __get_dataloaders(self, train_data, val_data, test_data = False):
+    def __get_dataloaders(self, train_data: pd.DataFrame, 
+                          val_data: pd.DataFrame, 
+                          test_data: pd.DataFrame) -> Tuple[DataLoader, DataLoader, 
+                                                            DataLoader]:
         
         train_data["TotalSales"] = (
             train_data
@@ -101,9 +105,9 @@ class NHiTS_model:
             static_categoricals = ["cluster_id"],
             target_normalizer = GroupNormalizer(groups = ["cluster_id"], 
                                                 method = "robust"),
-            add_relative_time_idx=self.dataset_configs.add_relative_time_idx,
-            add_target_scales=self.dataset_configs.add_target_scales,
-            add_encoder_length=self.dataset_configs.add_encoder_length
+            add_relative_time_idx = self.dataset_configs.add_relative_time_idx,
+            add_target_scales = self.dataset_configs.add_target_scales,
+            add_encoder_length = self.dataset_configs.add_encoder_length
         )
         
         validation = TimeSeriesDataSet.from_dataset(
@@ -122,7 +126,7 @@ class NHiTS_model:
 
         train_loader = self.training.to_dataloader(train = True, 
                                               batch_size = self.dataset_configs.batch_size, 
-                                              num_workers=0)
+                                              num_workers = 0)
         
         val_loader = validation.to_dataloader(train = False, 
                                               batch_size = self.dataset_configs.batch_size * 10, 
@@ -134,7 +138,8 @@ class NHiTS_model:
         
         return train_loader, val_loader, test_loader
         
-    def train(self, dataloaders: list, log_id: int, additional_callbacks: list = []) -> None:
+    def train(self, dataloaders: list, log_id: int, 
+              additional_callbacks: list = []) -> None:
 
         early_stop_callback = EarlyStopping(
             monitor = self.optimizer_configs.early_stopping_monitor, 
@@ -189,7 +194,7 @@ class NHiTS_model:
             val_dataloaders = dataloaders["val"]
         )
         
-    def cross_validate(self, MIN_TIME_IDX: int, MAX_TIME_IDX: int):
+    def cross_validate(self, MIN_TIME_IDX: int, MAX_TIME_IDX: int) -> None:
 
         total_window_width = self.cv_configs.val + self.cv_configs.test
         self.cv_results = []
@@ -243,7 +248,7 @@ class NHiTS_model:
 
             actuals = torch.cat([y[0] for x, y in iter(test_dataloader)])
             predictions = self.nhits.predict(test_dataloader, 
-                                           trainer_kwargs = dict(accelerator = self.nhits_configs.accelerator))
+                                             trainer_kwargs = dict(accelerator = self.nhits_configs.accelerator))
             
             self.cv_results.append({
                 "train_range": (start_idx, train_end),
@@ -258,6 +263,6 @@ class NHiTS_model:
             print("testing...done")
             print(f"This window got a MAPE of {self.cv_results[-1]['MAPE']}")
             
-    def predict(self, dataloader: any):
+    def predict(self, dataloader: Any) -> Any:
         
         return self.nhits.predict(dataloader)
