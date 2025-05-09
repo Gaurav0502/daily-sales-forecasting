@@ -43,7 +43,7 @@ pip install -r requirements.txt
 |--------------|--------------|--------------|--------------|
 | TFT | 21.70 | 0.2 | [wandb](https://wandb.ai/gauravpendharkar/TFT%20Window-based%20Evaluation?nw=nwusermitugaurav15) |
 | NHiTS | 18.70 | 0.2 | [wandb](https://wandb.ai/gauravpendharkar/NHiTS%20Window-based%20Evaluation/workspace?nw=nwusermitugaurav15) |
-| DeepAR | TBA | 0.2 | wandb |
+| DeepAR | 19.51 | 0.2 | [wandb](https://wandb.ai/gauravpendharkar/DeepAR%20Window%20based%20evaluation/overview) |
 
 </div>
 
