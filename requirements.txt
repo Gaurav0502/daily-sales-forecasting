@@ -4,13 +4,18 @@ scipy
 pandas
 seaborn
 matplotlib
-sklearn
+scikit-learn
+holidays
 
 # for tft
 torch 
 lightning 
 pytorch_forecasting
 pytorch_optimizer
-optuna-integration[pytorch_lightning]
 ray[tune]
-pickle
+tqdm
+wandb
+
+# for deepar
+gluonts
+mxnet
