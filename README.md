@@ -1,4 +1,6 @@
-# Daily Sales Forecasting
+<div align="center">
+<h1>Daily Sales Forecasting</h1>
+</div>
 
 ## Aim
 
@@ -89,4 +91,8 @@ $$ \text{Model Complexity} = \frac{\text{Number of Models}}{\text{Number of Clus
 ## References
 
 Online Retail dataset: https://archive.ics.uci.edu/dataset/502/online+retail+ii
+
+Demand Forecasting using TFT: https://pytorch-forecasting.readthedocs.io/en/stable/tutorials/stallion.html
+
+Autoregressive modelling with DeepAR and DeepVAR: https://pytorch-forecasting.readthedocs.io/en/stable/tutorials/deepar.html
 
