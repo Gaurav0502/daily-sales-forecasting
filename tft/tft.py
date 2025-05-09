@@ -249,8 +249,8 @@ class TFT:
                 "train_range": (start_idx, train_end),
                 "val_range": (train_end, val_end),
                 "test_range": (val_end, test_end),
-                "actuals": actuals.numpy(),
-                "predictions": predictions.cpu().numpy(),
+                "actuals": actuals,
+                "predictions": predictions,
                 "MAPE": mean_absolute_percentage_error(actuals.cpu(), 
                                                        predictions.cpu()) * 100
             })
