@@ -25,7 +25,8 @@ from lightning.pytorch.callbacks import EarlyStopping, LearningRateMonitor
 from lightning.pytorch.loggers import TensorBoardLogger, WandbLogger
 
 # pytorch forecasting core
-from pytorch_forecasting import Baseline, TemporalFusionTransformer, TimeSeriesDataSet
+from pytorch_forecasting import TimeSeriesDataSet
+from pytorch_forecasting.models.nhits import NHiTS
 
 # normalizers
 from pytorch_forecasting.data import GroupNormalizer
@@ -45,26 +46,27 @@ from torch.utils.data import DataLoader
 from typing import Tuple, Any
 
 
-class TFT:
+class NHiTS_model:
 
-    def __init__(self, data: pd.DataFrame, configs: dict[str, Any]):
+    def __init__(self, data: pd.DataFrame, loss: Any, 
+                 optimizer: Any, configs: dict[str, Any]):
         
         self.data = data
         self.cv_configs = configs["cross_validation"]
         self.dataset_configs = configs["dataset"]
-        self.tft_configs = configs["tft"]
+        self.optimizer_configs = configs["optimizer"]
+        self.nhits_configs = configs["nhits"]
 
         self.training = None
         self.trainer = None
-        self.tft = None
+        self.nhits = None
         self.cv_results = None
-
-    # time series smoothing
+        self.loss = loss
+        self.optimizer = optimizer
+       
     def apply_savgol_filter(self, x: pd.Series) -> Any:
-        return savgol_filter(x, window_length = 9, 
-                             polyorder = 2)
-
-    # create dataloaders for train, test, and validation
+        return savgol_filter(x, window_length = 9, polyorder = 2)
+        
     def __get_dataloaders(self, train_data: pd.DataFrame, 
                           val_data: pd.DataFrame, 
                           test_data: pd.DataFrame) -> Tuple[DataLoader, DataLoader, 
@@ -93,16 +95,19 @@ class TFT:
             time_idx = self.dataset_configs.time_idx,
             target = self.dataset_configs.target,
             group_ids = self.dataset_configs.group_ids,
-            min_encoder_length = self.dataset_configs.max_encoder_length // 2,
-            max_encoder_length = self.dataset_configs.max_encoder_length,
-            min_prediction_length = self.dataset_configs.min_prediction_length,
-            max_prediction_length = self.dataset_configs.max_prediction_length,
-            allow_missing_timesteps = True,
-            target_normalizer = GroupNormalizer(groups = ["cluster_id"], 
-                                                method = "robust"),
+            min_encoder_length = self.dataset_configs.encoder_length,
+            max_encoder_length = self.dataset_configs.encoder_length,
+            min_prediction_length = self.dataset_configs.prediction_length,
+            max_prediction_length = self.dataset_configs.prediction_length,
+
             time_varying_known_reals = ["time_idx", "days_to_christmas"],
             time_varying_unknown_reals = ["TotalSales"],
             static_categoricals = ["cluster_id"],
+            target_normalizer = GroupNormalizer(groups = ["cluster_id"], 
+                                                method = "robust"),
+            add_relative_time_idx = self.dataset_configs.add_relative_time_idx,
+            add_target_scales = self.dataset_configs.add_target_scales,
+            add_encoder_length = self.dataset_configs.add_encoder_length
         )
         
         validation = TimeSeriesDataSet.from_dataset(
@@ -121,7 +126,7 @@ class TFT:
 
         train_loader = self.training.to_dataloader(train = True, 
                                               batch_size = self.dataset_configs.batch_size, 
-                                              num_workers=0)
+                                              num_workers = 0)
         
         val_loader = validation.to_dataloader(train = False, 
                                               batch_size = self.dataset_configs.batch_size * 10, 
@@ -132,17 +137,16 @@ class TFT:
                                          num_workers = 0)
         
         return train_loader, val_loader, test_loader
-    
-    # training the TFT model
+        
     def train(self, dataloaders: list, log_id: int, 
               additional_callbacks: list = []) -> None:
 
         early_stop_callback = EarlyStopping(
-            monitor = self.tft_configs.early_stopping_monitor, 
-            min_delta = self.tft_configs.early_stopping_min_delta, 
-            patience = self.tft_configs.early_stopping_patience,
-            mode = self.tft_configs.early_stopping_mode,
-            verbose = False
+            monitor = self.optimizer_configs.early_stopping_monitor, 
+            min_delta = self.optimizer_configs.early_stopping_min_delta, 
+            patience = self.optimizer_configs.early_stopping_patience,
+            mode = self.optimizer_configs.early_stopping_mode,
+            verbose=False
         )
 
         lr_logger = LearningRateMonitor()
@@ -151,49 +155,48 @@ class TFT:
                      early_stop_callback] + additional_callbacks
         
         logger = WandbLogger(
-                    project = "TFT Window-based Evaluation",
+                    project = "NHiTS Window-based Evaluation",
                     name = f"window_{log_id}",
                     log_model = True
                 )
 
-        # logger = TensorBoardLogger("lightning_logs")
-
         self.trainer = pl.Trainer(
-            max_epochs = self.tft_configs.max_epochs // 2,
-            accelerator = self.tft_configs.accelerator,
-            gradient_clip_val = self.tft_configs.gradient_clip_val,
-            limit_train_batches = self.tft_configs.limit_train_batches,
+            max_epochs = self.optimizer_configs.max_epochs,
+            accelerator = self.optimizer_configs.accelerator,
+            gradient_clip_val = self.optimizer_configs.gradient_clip_val,
+            limit_train_batches = self.optimizer_configs.limit_train_batches,
             callbacks = callbacks,
             logger = logger,
             enable_model_summary = False,
             enable_progress_bar = False
         )
 
-        self.tft = TemporalFusionTransformer.from_dataset(
+        self.nhits = NHiTS.from_dataset(
             self.training,
-            learning_rate = self.tft_configs.lr,
-            hidden_size = self.tft_configs.hidden_size,
-            attention_head_size = self.tft_configs.attention_head_size,
-            dropout = self.tft_configs.dropout,
-            hidden_continuous_size = self.tft_configs.hidden_size // 2,
-            loss = MAE(),
+            learning_rate = self.nhits_configs.lr,
+            hidden_size = self.nhits_configs.hidden_size,
+            dropout = self.nhits_configs.dropout,
+            shared_weights = self.nhits_configs.shared_weights,
+            n_blocks = self.nhits_configs.n_blocks,
+            n_layers = self.nhits_configs.n_layers,
+            activation = self.nhits_configs.activation,
+            
+            loss = self.loss,
             log_interval = 10,
-            optimizer = Ranger,
-            reduce_on_plateau_patience = self.tft_configs.reduce_on_plateau_patience
+            optimizer = self.optimizer,
+            reduce_on_plateau_patience = self.nhits_configs.reduce_on_plateau_patience,
         )
 
+
         self.trainer.fit(
-            model = self.tft,
+            model = self.nhits,
             train_dataloaders = dataloaders["train"],
             val_dataloaders = dataloaders["val"]
         )
-
-    # Cross Validation of TFT model
+        
     def cross_validate(self, MIN_TIME_IDX: int, MAX_TIME_IDX: int) -> None:
 
-        # only consider validation and test
         total_window_width = self.cv_configs.val + self.cv_configs.test
-
         self.cv_results = []
         i = 0
 
@@ -203,7 +206,9 @@ class TFT:
                              desc = "cross-validation",
                              unit = "window"):
 
-            wandb.init(project = "TFT Window-based Evaluation", name = f"window_{i}")
+            wandb.init(project="NHiTS Window-based Evaluation", 
+                       name = f"window_{i}",
+                       settings = wandb.Settings(quiet = True))
 
             start_idx = k - MIN_TIME_IDX
 
@@ -214,11 +219,11 @@ class TFT:
             train_data = self.data[(self.data["time_idx"] >= 0) & (self.data["time_idx"] < train_end)]
 
             val_data = self.data[
-                (self.data["time_idx"] >= train_end - self.dataset_configs.max_encoder_length) & (self.data["time_idx"] < val_end)
+                (self.data["time_idx"] >= train_end - self.dataset_configs.encoder_length) & (self.data["time_idx"] < val_end)
             ]
 
             test_data = self.data[
-                (self.data["time_idx"] >= val_end - self.dataset_configs.max_encoder_length) & (self.data["time_idx"] < test_end)
+                (self.data["time_idx"] >= val_end - self.dataset_configs.encoder_length) & (self.data["time_idx"] < test_end)
             ]
 
             train_dataloader, val_dataloader, test_dataloader = self.__get_dataloaders(
@@ -239,11 +244,11 @@ class TFT:
             print("training...done")
             i += 1
 
-            wandb.finish(quiet = True)
+            wandb.finish()
 
             actuals = torch.cat([y[0] for x, y in iter(test_dataloader)])
-            predictions = self.tft.predict(test_dataloader, 
-                                           trainer_kwargs = dict(accelerator = self.tft_configs.accelerator))
+            predictions = self.nhits.predict(test_dataloader, 
+                                             trainer_kwargs = dict(accelerator = self.nhits_configs.accelerator))
             
             self.cv_results.append({
                 "train_range": (start_idx, train_end),
@@ -257,9 +262,7 @@ class TFT:
 
             print("testing...done")
             print(f"This window got a MAPE of {self.cv_results[-1]['MAPE']}")
-
-
+            
     def predict(self, dataloader: Any) -> Any:
         
-        return self.tft.predict(dataloader)
-    
+        return self.nhits.predict(dataloader)

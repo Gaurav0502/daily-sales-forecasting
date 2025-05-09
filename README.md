@@ -40,7 +40,7 @@ pip install -r requirements.txt
 | Model    | Overall MAPE     | Model Complexity    | Dashboard     |
 |--------------|--------------|--------------|--------------|
 | TFT | 21.70 | 0.2 | [wandb](https://wandb.ai/gauravpendharkar/TFT%20Window-based%20Evaluation?nw=nwusermitugaurav15) |
-| NHiTS | TBA | 0.2 | wandb |
+| NHiTS | 18.70 | 0.2 | [wandb](https://wandb.ai/gauravpendharkar/NHiTS%20Window-based%20Evaluation/workspace?nw=nwusermitugaurav15) |
 | DeepAR | TBA | 0.2 | wandb |
 
 ## References
