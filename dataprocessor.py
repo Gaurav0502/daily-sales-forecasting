@@ -25,7 +25,7 @@ class DataProcessor:
         self.n = None
 
         # constants
-        self.EVENTS_FP = open("/kaggle/input/events/events.json", 
+        self.EVENTS_FP = open("data/events.json", 
                               "r")
         self.EVENTS = json.load(self.EVENTS_FP)
 
