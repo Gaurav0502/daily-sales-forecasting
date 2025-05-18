@@ -72,7 +72,62 @@ pip install -r requirements.txt
 │   ├── tft.py
 │   └── tuner.py
 ```
+- To use the code in this repository, use the following code snippet:
+  
+```python
 
+# custom data processor (can be modified as required)
+from dataprocessor import DataProcessor
+
+# custom model building and training
+# (works only if .py or .ipynb is in root directory of the project)
+
+# DeepAR
+from deepar.config import CrossValConfigs, DataSetConfigs, DeepARConfigs
+from deepar.deepar import DeepAR_model
+
+# NHiTS
+from nhits.config import CrossValConfigs, DataSetConfigs, OptimizerConfigs, NHiTSConfigs
+from nhits.nhits import NHiTS_model
+
+# TFT
+from tft.config import CrossValConfigs, DataSetConfigs, TFTConfigs
+from tft.tft import TFT
+
+# custom model evaluator
+from evaluator import Evaluator
+
+# data pre-processing
+# and feature engineering
+dp = DataProcessor(data_dir = <csv-dataset-file-path>, clusters = <list-of-clusters>)
+dp.process()
+data = dp.data
+
+# model training
+# (update accordingly for TFT or NHiTS)
+deepar = DeepAR_model(
+    data = data,
+    configs = {
+        "cross_validation": CrossValConfigs(),
+        "dataset": DataSetConfigs(),
+        "deepar": DeepARConfigs()
+    }
+)
+
+deepar.cross_validate(
+    MIN_TIME_IDX = data["time_idx"].max() - 90,
+    MAX_TIME_IDX = data["time_idx"].max()
+)
+
+# model evaluation
+evaluator = Evaluator(deepar.cv_results)
+evaluator.print_mape_summary()
+evaluator.forecast_error_by_region()
+evaluator.mape_by_forecast()
+
+```
+- Feel free to raise an issue if there any issues with the repository!
+  
 ## Results
 
 <div align="center">
